@@ -2,77 +2,183 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
-const {ApolloServer, gql} = require('apollo-server-express');
-
-//const {graphqlExpress, graphiqlExpress} = require('graphql-server-express');
-//const {makeExecutableSchema} = require ('graphql-tools');
-
+const {ApolloServer, gql} = require('apollo-server-express')
+const {graphqlExpress, graphiqlExpress} = require('graphql-server-express');
+const {makeExecutableSchema} = require('graphql-tools');
 const {merge} = require('lodash');
 
-const Usuario = require('/home/mati/Documentos/GraphQL1/models/usuario.js');
+const Admin = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/adminUser.js');
+const Article = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/article.js');
+const DeliveryUser = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/deliveryUser.js');
+const NoPayment = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/noPayment.js');
+const Order = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/order.js');
+const Payment = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/payment.js');
+const PaymentMethods = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/paymentMethods.js');
+const Receipt = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/receipt.js');
+const Register = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/register.js');
+const User = require('/home/mati/Documentos/DesarrolloWeb/MongoDbTest/mongoDb-test/models/user.js');
 
 mongoose.connect('mongodb+srv://mati:71280558mch@cluster0.bmwighb.mongodb.net/bdwebmovil',{useNewUrlParser: true, useUnifiedTopology: true});
 
 const typeDefs = gql`
-
-	type Usuario{
-		id: ID!
-		email: String!
-		pass: String!
+	type User{		
+		run:        String!,
+		name:       String,
+		lastName:   String,
+		pass:       String,
+		adress:     String!,
+		commune :   String,
+		province:   String,
+		region:     String,
+		birthday:   String,
+		gender:     String,
+		email:      String!,
+		phone:      String,
+		registered: Boolean!
 	}
-
+	type Admin{
+		user : 	User!,
+		accessPass: String!,
+	}
+	type Article{
+		articleId: 	    ID,
+		articleName:    String,	
+		price:          Int!,
+		disponiblity:   Boolean!
+	}
+	type DeliveryUser{
+		user : 	User!,
+		accessPassDelivery: String!,
+	}
+	type NoPayment{
+		paymentStatus: Payment!
+		noPaymentStatus: Boolean!
+		paymentCause: String!,
+	}
+	type Order{
+		orderId:       ID!,
+		orderStatus:   String!,
+		paymentStatus: Payment!,
+		paymentMethods: PaymentMethods!, 
+		articles: [Article]!,
+		user: User!,
+	}
+	type Payment{
+		user: User!,
+		admin: Admin!,
+		order: Order!,
+		paymentMethod: PaymentMethods!,
+		paymentStatus: String!,
+	}
+	type PaymentMethods{		
+		paymentMethod: String!,		
+	}
+	type Receipt{		
+		user: User!,
+		admin: Admin!,
+		order: Order!,
+	}
+	type Register{		
+		user: User!,
+		admin: Admin!,
+	}
 	type Alert{
 		message: String
 	}
 
-	input UsuarioInput{
-		email: String!
-		pass: String!
+	input UserInput{
+		run:        String!,
+		name:       String,
+		lastName:   String,
+		pass:       String,
+		adress:     String!,
+		commune :   String,
+		province:   String,
+		region:     String,
+		birthday:   String,
+		gender:     String,
+		email:      String!,
+		phone:      String,
+		registered: Boolean!
+	}
+	input AdminInput{
+		accessPass: String!,
+	}
+	input ArticleInput{
+		idArticle: ID!,
+		articleName:    String!,	
+		price:          Int!,
+		disponiblity:   Boolean!
+	}
+	input DeliveryUserInput{
+		user : 	String!,
+		accessPassDelivery: String!,
+	}
+	input NoPaymentInput{
+		paymentStatus: String!,
+		noPaymentStatus: Boolean!,
+		paymentCause: String!
+	}
+	input OrderInput{
+		idOrder: ID!,
+		orderStatus:   String!,
+		paymentStatus: Boolean!,
+		paymentMethod: String!,
+		article: [String]!,
+		user: String!,
+	}		
+	input PaymentInput{
+		user: String!,
+		admin: String!,
+		order: String!,
+		paymentMethod: String!,	
+		paymentStatus: String!,
+	}
+	input PaymentMethodsInput{
+		paymentName: String!
+	}
+	input ReceiptInput{
+		idReceipt: ID!,
+		user: String!,
+		admin: String!,
+		Order: String!,
+	}
+	input RegisterInput{		
+		user: String!,
+		admin: String!,	
 	}
 
 	type Query{
-		getUsuarios: [Usuario]
-		getUsuario(id: ID!) : Usuario
+		getUsers: [User]
 	}
-
 	type Mutation{
-		addUsuario(input: UsuarioInput): Usuario
-		updateUsuario(id: ID!, input:UsuarioInput): Usuario
-		deleteUsuario(id: ID!): Alert
+		addUser(input: UserInput): User		
+	}
+	type Mutation{
+		addAdmin(input: AdminInput): Admin		
 	}
 	`;
 
 const resolvers = {
 	Query: {
-		async getUsuarios(obj){
-			const usuarios = await Usuario.find();
-			return usuarios;
-			},
-		async getUsuario(obj, { id }){
-			const usuario = await Usuario.findById(id);
-			return usuario;
+		async getUsers(obj){
+			const users = await User.find();
+			return users;
 			}
-		},
+     	},
 	Mutation: {
-		async addUsuario(obj, { input }){
-			const usuario = new Usuario(input);
-			await usuario.save();
-			return usuario;
+		async addUser(obj, { input }){
+			const user = new User(input);
+			await user.save();
+			return user;
 		},
-		async updateUsuario(obj, {id, input}){
-			const usuario = await Usuario.findByIdAndUpdate(id, input);
-			return usuario;
+		async addAdmin(obj, { input }){
+			const admin = new Admin(input);
+			await admin.save();
+			return admin;
 		},
-		async deleteUsuario(obj, { id }){
-			await Usuario.deleteOne({_id : id});
-			return{
-				message: "Usuario eliminado"
-			}
-		}
 	}
 }
-
 
 let apolloServer = null;
 
